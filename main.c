@@ -317,18 +317,12 @@ int main(void) {
             } else if ((down & KEY_A) && selected_console == 1) {
                 snprintf(status_line, sizeof(status_line), "Game Boy Color is coming soon");
             }
-            if (hid_touch_down()) {
-                int tx = hid_touch_x();
-                int ty = hid_touch_y();
-                if (ty >= 104 && ty <= 209 && tx < 200) {
-                    selected_console = 0;
-                    app_view = VIEW_GB_LIBRARY;
-                    selected_rom = 0;
-                    scan_roms();
-                    folder_notice_until = sys_millis() + 8000;
-                } else if (ty >= 104 && ty <= 209 && tx >= 200) {
-                    selected_console = 1;
-                }
+            if (hid_touch_down() && hid_touch_y() >= 82 &&
+                hid_touch_y() <= 124 && selected_console == 0) {
+                app_view = VIEW_GB_LIBRARY;
+                selected_rom = 0;
+                scan_roms();
+                folder_notice_until = sys_millis() + 8000;
             }
             draw_menu();
         } else {
