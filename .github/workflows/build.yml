@@ -1,0 +1,32 @@
+name: Build NexPlay for Aurora OS
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    container:
+      image: devkitpro/devkitarm
+    steps:
+      - name: Check out NexPlay
+        uses: actions/checkout@v4
+      - name: Install Python
+        run: |
+          if ! command -v python3 >/dev/null 2>&1; then
+            pacman -Sy --noconfirm python
+          fi
+      - name: Fetch Aurora OS SDK
+        run: git clone --depth 1 https://github.com/TeamAuroraOS/AuroraOS.git /tmp/AuroraOS
+      - name: Build AURC application
+        run: python3 /tmp/AuroraOS/sdk/aurcc.py build "$GITHUB_WORKSPACE" -o "$GITHUB_WORKSPACE/NexPlay.bin"
+      - name: Upload Aurora app
+        uses: actions/upload-artifact@v4
+        with:
+          name: NexPlay-Aurora-AURC
+          path: NexPlay.bin
+          if-no-files-found: error
