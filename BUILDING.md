@@ -9,6 +9,6 @@ python3 sdk/aurcc.py build NexPlay -o NexPlay.bin
 ```
 
 4. Copy the resulting `NexPlay.bin` to `SD:/Aurora/Apps/C/`.
-5. On the SD card, create `/roms/gb/` and copy your Game Boy ROM files there.
+5. On the SD card, create `/NexPlay/roms/gb/` and copy your Game Boy ROM files there.
 
 Aurora OS C apps require Beta 6 v0.1.5 or later for the `AURC` app container.
