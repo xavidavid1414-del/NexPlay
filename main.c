@@ -7,7 +7,7 @@
 #include "core/gb/peanut_gb.h"
 
 #define MAX_ROMS 48
-#define ROM_DIR "/roms/gb"
+#define ROM_DIR "/NexPlay/roms/gb"
 #define SAVE_MAGIC "NPS1"
 
 typedef struct {
@@ -70,6 +70,8 @@ static void gb_draw_line(struct gb_s *ctx, const uint8_t *pixels,
 
 static void scan_roms(void) {
     rom_count = 0;
+    fs_mkdir("/NexPlay");
+    fs_mkdir("/NexPlay/roms");
     fs_mkdir(ROM_DIR);
     FsDir *dir = fs_dir_open(ROM_DIR);
     if (!dir) {
@@ -90,7 +92,7 @@ static void scan_roms(void) {
         }
     }
     fs_dir_close(dir);
-    if (!rom_count) snprintf(status_line, sizeof(status_line), "Add .gb ROMs to /roms/gb");
+    if (!rom_count) snprintf(status_line, sizeof(status_line), "Add .gb ROMs to /NexPlay/roms/gb");
     else snprintf(status_line, sizeof(status_line), "%d Game Boy ROM(s) found", rom_count);
 }
 
@@ -173,7 +175,7 @@ static void draw_library(void) {
     if (!rom_count) {
         gfx_print(SCREEN_TOP, 28, 148, FONT_REGULAR, COLOR_WHITE, "No games found");
         gfx_print(SCREEN_TOP, 28, 172, FONT_SMALL, RGB(165, 180, 198),
-                  "Place .gb or .gbc files in /roms/gb");
+                  "Place .gb files in /NexPlay/roms/gb");
     } else {
         int first = selected_rom > 4 ? selected_rom - 4 : 0;
         for (int i = first; i < rom_count && i < first + 5; ++i) {
