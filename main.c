@@ -31,10 +31,20 @@ static AppView app_view = VIEW_CONSOLES;
 static int selected_console;
 static uint32_t folder_notice_until;
 
-/* Cool, high-contrast LCD palette: midnight blue through ice cyan. */
+/* Original monochrome Game Boy LCD shades; app theme is independent. */
 static const uint32_t dmg_colors[4] = {
-    RGB(12, 22, 38), RGB(35, 91, 119),
-    RGB(91, 181, 205), RGB(218, 246, 250)
+    RGB(15, 56, 15), RGB(48, 98, 48),
+    RGB(139, 172, 15), RGB(155, 188, 15)
+};
+
+#define CONSOLE_COUNT 10
+static const char *console_names[CONSOLE_COUNT] = {
+    "GAME BOY", "GAME BOY COLOR", "GAME BOY ADVANCE",
+    "NINTENDO NES", "SUPER NINTENDO", "SEGA MEGA DRIVE",
+    "PLAYSTATION", "NINTENDO 64", "NINTENDO DS", "PSP"
+};
+static const char *console_short[CONSOLE_COUNT] = {
+    "GB", "GBC", "GBA", "NES", "SNES", "MD", "PS1", "N64", "NDS", "PSP"
 };
 
 static uint8_t gb_rom_read(struct gb_s *ctx, const uint_fast32_t address) {
@@ -163,65 +173,69 @@ static void close_game(void) {
 
 static void draw_header(const char *subtitle) {
     gfx_gradient(SCREEN_TOP, 0, 0, SCREEN_TOP_WIDTH, 48,
-                 RGB(24, 34, 55), RGB(13, 19, 34));
+                 RGB(25, 17, 39), RGB(9, 10, 17));
     gfx_print(SCREEN_TOP, 16, 8, FONT_TITLE, COLOR_WHITE, "NexPlay");
-    gfx_print(SCREEN_TOP, 17, 32, FONT_SMALL, RGB(150, 190, 210), "%s", subtitle);
-    gfx_rect(SCREEN_TOP, 0, 48, SCREEN_TOP_WIDTH, 1, RGB(65, 88, 116));
+    gfx_print(SCREEN_TOP, 17, 32, FONT_SMALL, RGB(92, 225, 220), "%s", subtitle);
+    gfx_rect(SCREEN_TOP, 0, 48, SCREEN_TOP_WIDTH, 1, RGB(126, 76, 181));
 }
 
 static void draw_menu(void) {
-    gfx_clear(SCREEN_TOP, RGB(7, 12, 25));
-    gfx_gradient(SCREEN_TOP, 0, 0, SCREEN_TOP_WIDTH, 58,
-                 RGB(20, 42, 76), RGB(8, 15, 31));
-    gfx_print(SCREEN_TOP, 18, 10, FONT_TITLE, COLOR_WHITE, "NEXPLAY");
-    gfx_print(SCREEN_TOP, 20, 36, FONT_SMALL, RGB(105, 221, 239),
-              "NEXT-GEN CONSOLE LIBRARY");
-    gfx_rect(SCREEN_TOP, 16, 61, 368, 1, RGB(38, 104, 139));
-    gfx_print(SCREEN_TOP, 20, 76, FONT_BOLD, RGB(190, 220, 238),
+    static const int card_x[2] = {16, 206};
+    static const int card_y[3] = {82, 132, 182};
+    gfx_clear(SCREEN_TOP, RGB(9, 10, 17));
+    gfx_gradient(SCREEN_TOP, 0, 0, SCREEN_TOP_WIDTH, 61,
+                 RGB(34, 22, 49), RGB(10, 11, 19));
+    gfx_print(SCREEN_TOP, 18, 8, FONT_TITLE, COLOR_WHITE, "NEXPLAY");
+    gfx_print(SCREEN_TOP, 20, 34, FONT_SMALL, RGB(92, 225, 220),
+              "FUTURE-READY EMULATION HUB");
+    gfx_rect(SCREEN_TOP, 16, 62, 368, 1, RGB(126, 76, 181));
+    gfx_print(SCREEN_TOP, 20, 67, FONT_SMALL, RGB(190, 178, 210),
               "SELECT A PLATFORM");
 
-    gfx_round_rect(SCREEN_TOP, 16, 104, 178, 105, 10,
-                   selected_console == 0 ? RGB(22, 67, 91) : RGB(17, 29, 48));
-    gfx_rect_outline(SCREEN_TOP, 16, 104, 178, 105, 2,
-                     selected_console == 0 ? RGB(69, 218, 239) : RGB(38, 65, 91));
-    gfx_round_rect(SCREEN_TOP, 29, 117, 42, 42, 8, RGB(24, 116, 145));
-    gfx_print(SCREEN_TOP, 39, 129, FONT_BOLD, COLOR_WHITE, "GB");
-    gfx_print(SCREEN_TOP, 82, 120, FONT_BOLD, COLOR_WHITE, "GAME BOY");
-    gfx_print(SCREEN_TOP, 82, 143, FONT_SMALL, RGB(120, 225, 230), "READY");
-    gfx_print(SCREEN_TOP, 29, 176, FONT_SMALL, RGB(190, 211, 226), "Original DMG games");
+    for (int i = 0; i < CONSOLE_COUNT; ++i) {
+        int row = i / 2, col = i % 2;
+        int x = card_x[col], y = card_y[row];
+        bool selected = (i == selected_console);
+        bool ready = (i == 0);
+        gfx_round_rect(SCREEN_TOP, x, y, 178, 43, 7,
+                       selected ? RGB(48, 32, 65) : RGB(23, 23, 33));
+        gfx_rect_outline(SCREEN_TOP, x, y, 178, 43, 2,
+                         selected ? RGB(92, 225, 220) : RGB(66, 49, 83));
+        gfx_round_rect(SCREEN_TOP, x + 7, y + 7, 38, 29, 5,
+                       ready ? RGB(20, 104, 100) : RGB(63, 45, 89));
+        gfx_print(SCREEN_TOP, x + 11, y + 15, FONT_SMALL, COLOR_WHITE,
+                  "%s", console_short[i]);
+        gfx_print(SCREEN_TOP, x + 52, y + 7, FONT_SMALL, COLOR_WHITE,
+                  "%s", console_names[i]);
+        gfx_print(SCREEN_TOP, x + 52, y + 25, FONT_MONO,
+                  ready ? RGB(92, 225, 170) : RGB(181, 151, 207),
+                  "%s", ready ? "READY" : "COMING SOON");
+    }
 
-    gfx_round_rect(SCREEN_TOP, 206, 104, 178, 105, 10,
-                   selected_console == 1 ? RGB(22, 67, 91) : RGB(17, 29, 48));
-    gfx_rect_outline(SCREEN_TOP, 206, 104, 178, 105, 2,
-                     selected_console == 1 ? RGB(69, 218, 239) : RGB(38, 65, 91));
-    gfx_round_rect(SCREEN_TOP, 219, 117, 42, 42, 8, RGB(73, 70, 139));
-    gfx_print(SCREEN_TOP, 228, 129, FONT_BOLD, COLOR_WHITE, "C");
-    gfx_print(SCREEN_TOP, 272, 120, FONT_BOLD, COLOR_WHITE, "GAME BOY");
-    gfx_print(SCREEN_TOP, 272, 137, FONT_BOLD, COLOR_WHITE, "COLOR");
-    gfx_print(SCREEN_TOP, 219, 176, FONT_SMALL, RGB(174, 183, 211), "COMING SOON");
-
-    gfx_clear(SCREEN_BOTTOM, RGB(8, 16, 30));
+    gfx_clear(SCREEN_BOTTOM, RGB(12, 12, 21));
     gfx_gradient(SCREEN_BOTTOM, 0, 0, SCREEN_BOTTOM_WIDTH, 54,
-                 RGB(17, 38, 65), RGB(8, 16, 30));
-    gfx_print(SCREEN_BOTTOM, 14, 12, FONT_BOLD, COLOR_WHITE, "PLATFORM SELECT");
-    gfx_print(SCREEN_BOTTOM, 14, 38, FONT_SMALL, RGB(115, 206, 225),
-              "Choose a system to browse its games");
-    gfx_round_rect(SCREEN_BOTTOM, 12, 82, 296, 42, 8, RGB(19, 52, 72));
-    gfx_print(SCREEN_BOTTOM, 25, 95, FONT_BOLD, COLOR_WHITE, "A / TAP  Open selected");
-    gfx_print(SCREEN_BOTTOM, 14, 151, FONT_SMALL, RGB(149, 176, 198),
-              "D-Pad: Select platform");
-    gfx_print(SCREEN_BOTTOM, 14, 174, FONT_SMALL, RGB(149, 176, 198),
-              "Only marked READY systems are playable");
+                 RGB(32, 21, 46), RGB(12, 12, 21));
+    gfx_print(SCREEN_BOTTOM, 14, 10, FONT_BOLD, COLOR_WHITE, "PLATFORM SELECT");
+    gfx_print(SCREEN_BOTTOM, 14, 34, FONT_SMALL, RGB(92, 225, 220),
+              "A / TAP  Open selected platform");
+    gfx_round_rect(SCREEN_BOTTOM, 12, 86, 296, 45, 8, RGB(35, 26, 48));
+    gfx_rect_outline(SCREEN_BOTTOM, 12, 86, 296, 45, 1, RGB(126, 76, 181));
+    gfx_print(SCREEN_BOTTOM, 24, 101, FONT_BOLD, COLOR_WHITE,
+              "D-PAD / CIRCLE PAD  Navigate");
+    gfx_print(SCREEN_BOTTOM, 14, 158, FONT_SMALL, RGB(175, 165, 190),
+              "Game Boy is currently playable.");
+    gfx_print(SCREEN_BOTTOM, 14, 180, FONT_SMALL, RGB(175, 165, 190),
+              "Other platforms are planned.");
 }
 
 static void draw_library(void) {
-    gfx_clear(SCREEN_TOP, RGB(7, 12, 25));
+    gfx_clear(SCREEN_TOP, RGB(9, 10, 17));
     draw_header("GAME BOY  /  GAME LIBRARY");
     gfx_print(SCREEN_TOP, 18, 62, FONT_BOLD, COLOR_WHITE, "GAME BOY");
     gfx_print(SCREEN_TOP, 18, 82, FONT_SMALL, RGB(105, 205, 225),
               "NINTENDO DMG  |  READY");
-    gfx_round_rect(SCREEN_TOP, 16, 108, 368, 112, 9, RGB(15, 29, 47));
-    gfx_rect_outline(SCREEN_TOP, 16, 108, 368, 112, 1, RGB(35, 91, 119));
+    gfx_round_rect(SCREEN_TOP, 16, 108, 368, 112, 9, RGB(23, 23, 33));
+    gfx_rect_outline(SCREEN_TOP, 16, 108, 368, 112, 1, RGB(66, 49, 83));
     gfx_print(SCREEN_TOP, 28, 120, FONT_BOLD, RGB(91, 211, 230), "ROM LIBRARY");
     if (!rom_count) {
         gfx_print(SCREEN_TOP, 28, 148, FONT_REGULAR, COLOR_WHITE, "No games found");
@@ -232,24 +246,24 @@ static void draw_library(void) {
         for (int i = first; i < rom_count && i < first + 5; ++i) {
             int y = 145 + (i - first) * 14;
             if (i == selected_rom)
-                gfx_round_rect(SCREEN_TOP, 24, y - 2, 350, 14, 3, RGB(28, 83, 111));
+                gfx_round_rect(SCREEN_TOP, 24, y - 2, 350, 14, 3, RGB(48, 32, 65));
             gfx_print(SCREEN_TOP, 32, y, FONT_SMALL,
                       i == selected_rom ? COLOR_WHITE : RGB(175, 198, 215),
                       "%s", rom_names[i]);
         }
     }
 
-    gfx_clear(SCREEN_BOTTOM, RGB(8, 16, 30));
+    gfx_clear(SCREEN_BOTTOM, RGB(12, 12, 21));
     gfx_gradient(SCREEN_BOTTOM, 0, 0, SCREEN_BOTTOM_WIDTH, 48,
-                 RGB(17, 38, 65), RGB(8, 16, 30));
+                 RGB(32, 21, 46), RGB(12, 12, 21));
     gfx_print(SCREEN_BOTTOM, 14, 12, FONT_BOLD, COLOR_WHITE, "GAME LIBRARY");
     gfx_print(SCREEN_BOTTOM, 14, 34, FONT_SMALL, RGB(115, 206, 225), "%s", status_line);
-    gfx_round_rect(SCREEN_BOTTOM, 12, 74, 296, 42, 7, RGB(19, 52, 72));
+    gfx_round_rect(SCREEN_BOTTOM, 12, 74, 296, 42, 7, RGB(35, 26, 48));
     gfx_print(SCREEN_BOTTOM, 25, 87, FONT_BOLD, COLOR_WHITE, "A / TAP  Open Game");
     gfx_round_rect(SCREEN_BOTTOM, 12, 124, 296, 42, 7, RGB(19, 52, 72));
     gfx_print(SCREEN_BOTTOM, 25, 137, FONT_BOLD, COLOR_WHITE, "Y  Refresh Library");
     gfx_print(SCREEN_BOTTOM, 14, 190, FONT_SMALL, RGB(149, 176, 198),
-              "D-Pad: Select   B: Back");
+              "D-Pad / Circle Pad: Select   B: Back");
     if ((int32_t)(folder_notice_until - sys_millis()) > 0) {
         gfx_round_rect(SCREEN_BOTTOM, 8, 211, 304, 24, 5, RGB(22, 81, 103));
         gfx_print(SCREEN_BOTTOM, 13, 217, FONT_SMALL, COLOR_WHITE,
@@ -258,9 +272,9 @@ static void draw_library(void) {
 }
 
 static void draw_game(void) {
-    gfx_clear(SCREEN_TOP, RGB(7, 12, 25));
-    gfx_round_rect(SCREEN_TOP, 105, 32, 190, 176, 8, RGB(17, 35, 55));
-    gfx_rect_outline(SCREEN_TOP, 105, 32, 190, 176, 2, RGB(53, 151, 178));
+    gfx_clear(SCREEN_TOP, RGB(9, 10, 17));
+    gfx_round_rect(SCREEN_TOP, 105, 32, 190, 176, 8, RGB(23, 23, 33));
+    gfx_rect_outline(SCREEN_TOP, 105, 32, 190, 176, 2, RGB(126, 76, 181));
     if (gb_image)
         gfx_image_scaled(SCREEN_TOP, gb_image, 120, 48, LCD_WIDTH, LCD_HEIGHT);
     gfx_print(SCREEN_TOP, 10, 10, FONT_SMALL, RGB(180, 200, 215), "NEXPLAY  /  GAME BOY");
@@ -307,22 +321,43 @@ int main(void) {
             }
             draw_game();
         } else if (app_view == VIEW_CONSOLES) {
-            if ((down & KEY_UP) || (down & KEY_LEFT)) selected_console = 0;
-            if ((down & KEY_DOWN) || (down & KEY_RIGHT)) selected_console = 1;
+            if ((down & (KEY_UP | KEY_CPAD_UP)) && selected_console >= 2)
+                selected_console -= 2;
+            if ((down & (KEY_DOWN | KEY_CPAD_DOWN)) && selected_console + 2 < CONSOLE_COUNT)
+                selected_console += 2;
+            if ((down & (KEY_LEFT | KEY_CPAD_LEFT)) && (selected_console % 2) == 1)
+                --selected_console;
+            if ((down & (KEY_RIGHT | KEY_CPAD_RIGHT)) &&
+                (selected_console % 2) == 0 && selected_console + 1 < CONSOLE_COUNT)
+                ++selected_console;
             if ((down & KEY_A) && selected_console == 0) {
                 app_view = VIEW_GB_LIBRARY;
                 selected_rom = 0;
                 scan_roms();
                 folder_notice_until = sys_millis() + 8000;
-            } else if ((down & KEY_A) && selected_console == 1) {
-                snprintf(status_line, sizeof(status_line), "Game Boy Color is coming soon");
+            } else if (down & KEY_A) {
+                snprintf(status_line, sizeof(status_line), "%s is coming soon",
+                         console_names[selected_console]);
             }
-            if (hid_touch_down() && hid_touch_y() >= 82 &&
-                hid_touch_y() <= 124 && selected_console == 0) {
-                app_view = VIEW_GB_LIBRARY;
-                selected_rom = 0;
-                scan_roms();
-                folder_notice_until = sys_millis() + 8000;
+            if (hid_touch_down()) {
+                int tx = hid_touch_x(), ty = hid_touch_y();
+                if (ty >= 82 && ty <= 225) {
+                    int row = (ty - 82) / 50;
+                    int col = tx < 200 ? 0 : 1;
+                    int choice = row * 2 + col;
+                    if (choice >= 0 && choice < CONSOLE_COUNT) {
+                        selected_console = choice;
+                        if (choice == 0) {
+                            app_view = VIEW_GB_LIBRARY;
+                            selected_rom = 0;
+                            scan_roms();
+                            folder_notice_until = sys_millis() + 8000;
+                        } else {
+                            snprintf(status_line, sizeof(status_line), "%s is coming soon",
+                                     console_names[choice]);
+                        }
+                    }
+                }
             }
             draw_menu();
         } else {
@@ -330,8 +365,8 @@ int main(void) {
                 app_view = VIEW_CONSOLES;
                 selected_rom = 0;
             }
-            if (down & KEY_UP && selected_rom > 0) --selected_rom;
-            if (down & KEY_DOWN && selected_rom + 1 < rom_count) ++selected_rom;
+            if ((down & (KEY_UP | KEY_CPAD_UP)) && selected_rom > 0) --selected_rom;
+            if ((down & (KEY_DOWN | KEY_CPAD_DOWN)) && selected_rom + 1 < rom_count) ++selected_rom;
             if (down & KEY_Y) scan_roms();
             if ((down & KEY_A) && rom_count > 0) load_game(rom_names[selected_rom]);
             if (hid_touch_down()) {
