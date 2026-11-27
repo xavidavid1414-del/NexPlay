@@ -15,7 +15,7 @@ typedef struct {
     size_t rom_size;
     uint8_t *cart_ram;
     size_t cart_ram_size;
-    uint8_t frame[GB_LCD_HEIGHT][GB_LCD_WIDTH];
+    uint8_t frame[LCD_HEIGHT][LCD_WIDTH];
     bool core_error;
 } GbMachine;
 
@@ -60,8 +60,8 @@ static void gb_error(struct gb_s *ctx, const enum gb_error_e error,
 static void gb_draw_line(struct gb_s *ctx, const uint8_t *pixels,
                          const uint_fast8_t line) {
     (void)ctx;
-    if (line >= GB_LCD_HEIGHT) return;
-    for (int x = 0; x < GB_LCD_WIDTH; ++x)
+    if (line >= LCD_HEIGHT) return;
+    for (int x = 0; x < LCD_WIDTH; ++x)
         machine.frame[line][x] = pixels[x] & 3;
 }
 
@@ -77,13 +77,14 @@ static void scan_roms(void) {
     while (rom_count < MAX_ROMS && fs_dir_read(dir, &entry)) {
         if (entry.is_dir) continue;
         size_t n = strlen(entry.name);
-        if (n < 4) continue;
-        const char *ext = entry.name + n - 4;
-        if ((ext[0] == '.' || ext[0] == '.') &&
-            ((ext[1] == 'g' || ext[1] == 'G') &&
-             (ext[2] == 'b' || ext[2] == 'B') &&
-             (ext[3] == 'c' || ext[3] == 'C' ||
-              ext[3] == 'b' || ext[3] == 'B'))) {
+        bool is_gb = n >= 3 && entry.name[n - 3] == '.' &&
+                     (entry.name[n - 2] == 'g' || entry.name[n - 2] == 'G') &&
+                     (entry.name[n - 1] == 'b' || entry.name[n - 1] == 'B');
+        bool is_gbc = n >= 4 && entry.name[n - 4] == '.' &&
+                      (entry.name[n - 3] == 'g' || entry.name[n - 3] == 'G') &&
+                      (entry.name[n - 2] == 'b' || entry.name[n - 2] == 'B') &&
+                      (entry.name[n - 1] == 'c' || entry.name[n - 1] == 'C');
+        if (is_gb || is_gbc) {
             strncpy(rom_names[rom_count], entry.name, FS_NAME_MAX - 1);
             rom_names[rom_count][FS_NAME_MAX - 1] = 0;
             ++rom_count;
@@ -191,9 +192,9 @@ static void draw_library(void) {
 static void draw_game(void) {
     gfx_clear(SCREEN_TOP, RGB(10, 15, 24));
     gfx_round_rect(SCREEN_TOP, 105, 32, 190, 176, 8, RGB(32, 43, 56));
-    gfx_rect(SCREEN_TOP, 120, 48, GB_LCD_WIDTH, GB_LCD_HEIGHT, dmg_colors[3]);
-    for (int y = 0; y < GB_LCD_HEIGHT; ++y)
-        for (int x = 0; x < GB_LCD_WIDTH; ++x)
+    gfx_rect(SCREEN_TOP, 120, 48, LCD_WIDTH, LCD_HEIGHT, dmg_colors[3]);
+    for (int y = 0; y < LCD_HEIGHT; ++y)
+        for (int x = 0; x < LCD_WIDTH; ++x)
             gfx_pixel(SCREEN_TOP, 120 + x, 48 + y, dmg_colors[machine.frame[y][x] & 3]);
     gfx_print(SCREEN_TOP, 10, 10, FONT_SMALL, RGB(180, 200, 215), "NEXPLAY  /  GAME BOY");
     gfx_clear(SCREEN_BOTTOM, RGB(18, 25, 39));
@@ -205,7 +206,7 @@ static void draw_game(void) {
     gfx_print(SCREEN_BOTTOM, 14, 90, FONT_REGULAR, RGB(180, 205, 220),
               "X: Start    Y: Select");
     gfx_round_rect(SCREEN_BOTTOM, 12, 145, 296, 44, 7, RGB(42, 56, 75));
-    gfx_print(SCREEN_BOTTOM, 24, 160, FONT_BOLD, COLOR_WHITE, "B: Return to Library");
+    gfx_print(SCREEN_BOTTOM, 24, 160, FONT_BOLD, COLOR_WHITE, "X + Y: Return to Library");
 }
 
 static void update_game_input(void) {
@@ -225,7 +226,7 @@ int main(void) {
     while (app_loop()) {
         uint32_t down = hid_keys_down();
         if (running_game) {
-            if (down & KEY_B) {
+            if ((down & KEY_X) && (hid_keys_held() & KEY_Y)) {
                 close_game();
                 continue;
             }
