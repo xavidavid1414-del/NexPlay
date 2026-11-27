@@ -37,14 +37,13 @@ static const uint32_t dmg_colors[4] = {
     RGB(139, 172, 15), RGB(155, 188, 15)
 };
 
-#define CONSOLE_COUNT 10
+#define CONSOLE_COUNT 8
 static const char *console_names[CONSOLE_COUNT] = {
-    "GAME BOY", "GAME BOY COLOR", "GAME BOY ADVANCE",
-    "NINTENDO NES", "SUPER NINTENDO", "SEGA MEGA DRIVE",
-    "PLAYSTATION", "NINTENDO 64", "NINTENDO DS", "PSP"
+    "GAME BOY", "GAME BOY COLOR", "GAME BOY ADVANCE", "NINTENDO NES",
+    "SUPER NINTENDO", "SEGA MEGA DRIVE", "SEGA MASTER SYSTEM", "PLAYSTATION"
 };
 static const char *console_short[CONSOLE_COUNT] = {
-    "GB", "GBC", "GBA", "NES", "SNES", "MD", "PS1", "N64", "NDS", "PSP"
+    "GB", "GBC", "GBA", "NES", "SNES", "MD", "SMS", "PS1"
 };
 
 static uint8_t gb_rom_read(struct gb_s *ctx, const uint_fast32_t address) {
