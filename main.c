@@ -15,7 +15,6 @@ typedef struct {
     size_t rom_size;
     uint8_t *cart_ram;
     size_t cart_ram_size;
-    uint8_t frame[LCD_HEIGHT][LCD_WIDTH];
     bool core_error;
 } GbMachine;
 
@@ -26,6 +25,7 @@ static int rom_count;
 static int selected_rom;
 static char status_line[64] = "Ready";
 static bool running_game;
+static GfxImage *gb_image;
 
 static const uint32_t dmg_colors[4] = {
     RGB(15, 56, 15), RGB(48, 98, 48),
@@ -61,8 +61,11 @@ static void gb_draw_line(struct gb_s *ctx, const uint8_t *pixels,
                          const uint_fast8_t line) {
     (void)ctx;
     if (line >= LCD_HEIGHT) return;
-    for (int x = 0; x < LCD_WIDTH; ++x)
-        machine.frame[line][x] = pixels[x] & 3;
+    if (!gb_image) return;
+    for (int x = 0; x < LCD_WIDTH; ++x) {
+        uint32_t color = dmg_colors[pixels[x] & 3];
+        gb_image->pixels[line * LCD_WIDTH + x] = 0xFF000000u | color;
+    }
 }
 
 static void scan_roms(void) {
@@ -80,11 +83,7 @@ static void scan_roms(void) {
         bool is_gb = n >= 3 && entry.name[n - 3] == '.' &&
                      (entry.name[n - 2] == 'g' || entry.name[n - 2] == 'G') &&
                      (entry.name[n - 1] == 'b' || entry.name[n - 1] == 'B');
-        bool is_gbc = n >= 4 && entry.name[n - 4] == '.' &&
-                      (entry.name[n - 3] == 'g' || entry.name[n - 3] == 'G') &&
-                      (entry.name[n - 2] == 'b' || entry.name[n - 2] == 'B') &&
-                      (entry.name[n - 1] == 'c' || entry.name[n - 1] == 'C');
-        if (is_gb || is_gbc) {
+        if (is_gb) {
             strncpy(rom_names[rom_count], entry.name, FS_NAME_MAX - 1);
             rom_names[rom_count][FS_NAME_MAX - 1] = 0;
             ++rom_count;
@@ -107,6 +106,13 @@ static bool load_game(const char *name) {
     }
 
     memset(&machine, 0, sizeof(machine));
+    if (gb_image) gfx_image_free(gb_image);
+    gb_image = gfx_image_new(LCD_WIDTH, LCD_HEIGHT);
+    if (!gb_image) {
+        free(rom);
+        snprintf(status_line, sizeof(status_line), "Not enough memory for display");
+        return false;
+    }
     machine.rom = rom;
     machine.rom_size = size;
     if (gb_init(&gb, gb_rom_read, gb_cart_ram_read, gb_cart_ram_write,
@@ -141,6 +147,8 @@ static void close_game(void) {
     save_game();
     if (machine.rom) free(machine.rom);
     if (machine.cart_ram) free(machine.cart_ram);
+    if (gb_image) gfx_image_free(gb_image);
+    gb_image = NULL;
     memset(&machine, 0, sizeof(machine));
     running_game = false;
     scan_roms();
@@ -192,10 +200,8 @@ static void draw_library(void) {
 static void draw_game(void) {
     gfx_clear(SCREEN_TOP, RGB(10, 15, 24));
     gfx_round_rect(SCREEN_TOP, 105, 32, 190, 176, 8, RGB(32, 43, 56));
-    gfx_rect(SCREEN_TOP, 120, 48, LCD_WIDTH, LCD_HEIGHT, dmg_colors[3]);
-    for (int y = 0; y < LCD_HEIGHT; ++y)
-        for (int x = 0; x < LCD_WIDTH; ++x)
-            gfx_pixel(SCREEN_TOP, 120 + x, 48 + y, dmg_colors[machine.frame[y][x] & 3]);
+    if (gb_image)
+        gfx_image_scaled(SCREEN_TOP, gb_image, 120, 48, LCD_WIDTH, LCD_HEIGHT);
     gfx_print(SCREEN_TOP, 10, 10, FONT_SMALL, RGB(180, 200, 215), "NEXPLAY  /  GAME BOY");
     gfx_clear(SCREEN_BOTTOM, RGB(18, 25, 39));
     gfx_print(SCREEN_BOTTOM, 14, 12, FONT_BOLD, COLOR_WHITE, "GAME CONTROLS");
