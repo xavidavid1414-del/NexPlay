@@ -11,10 +11,11 @@ A native multisystem emulator for Aurora OS on Nintendo 3DS.
 
 ## Features in this build
 
-- Dual-screen library interface.
+- Futuristic dual-screen console selector and game library.
+- Game Boy Color is listed as coming soon; it is not playable yet.
 - Game Boy ROM browser at `/NexPlay/roms/gb`.
 - Game Boy DMG core integration.
-- D-pad, A/B, Start and Select input mapping.
+- D-pad, A/B, X for Start and the physical SELECT key for Select.
 - Cartridge RAM allocation and save-file writing.
 - Native Aurora drawing and input APIs.
 
@@ -46,8 +47,9 @@ Create `SD:/NexPlay/roms/gb/` and place legally obtained `.gb` ROM files there.
 | A | A |
 | B | B |
 | X | Start |
-| Y | Select |
-| B while playing | Return to library |
+| SELECT | Select |
+| X + Y while playing | Return to Game Boy library |
+| B in library | Return to console menu |
 
 ## Core attribution
 
